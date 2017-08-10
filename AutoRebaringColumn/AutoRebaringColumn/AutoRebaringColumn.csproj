@@ -55,12 +55,10 @@
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="RevitAPI">
-      <HintPath>$(ProgramW6432)\Autodesk\Revit 2017\RevitAPI.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>C:\Program Files\Autodesk\Revit 2017\RevitAPI.dll</HintPath>
     </Reference>
     <Reference Include="RevitAPIUI">
-      <HintPath>$(ProgramW6432)\Autodesk\Revit 2017\RevitAPIUI.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>C:\Program Files\Autodesk\Revit 2017\RevitAPIUI.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>
@@ -70,8 +68,11 @@
     <Compile Include="Command.cs" />
     <Compile Include="ElementGeometryInfo.cs" />
     <Compile Include="ExcelHandler.cs" />
+    <Compile Include="ExportExcel.cs" />
     <Compile Include="GeomUtil.cs" />
+    <Compile Include="ImportExcel.cs" />
     <Compile Include="MultiPolygon.cs" />
+    <Compile Include="Phuoc.cs" />
     <Compile Include="Polygon.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
