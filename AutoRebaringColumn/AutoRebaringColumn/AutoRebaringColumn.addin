@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Text>Command AutoRebaringColumn</Text>
+    <Description>Some description for AutoRebaringColumn</Description>
+    <Assembly>AutoRebaringColumn.dll</Assembly>
+    <FullClassName>AutoRebaringColumn.Command</FullClassName>
+    <ClientId>b17493d2-29ee-43a2-abd0-2b8b4f3ec782</ClientId>
+    <VendorId>com.typepad.thebuildingcoder</VendorId>
+    <VendorDescription>The Building Coder, http://thebuildingcoder.typepad.com</VendorDescription>
+  </AddIn>
+  <AddIn Type="Application">
+    <Name>Application AutoRebaringColumn</Name>
+    <Assembly>AutoRebaringColumn.dll</Assembly>
+    <FullClassName>AutoRebaringColumn.App</FullClassName>
+    <ClientId>e9219d97-ccb6-4ace-b431-87779110d74b</ClientId>
+    <VendorId>com.typepad.thebuildingcoder</VendorId>
+    <VendorDescription>The Building Coder, http://thebuildingcoder.typepad.com</VendorDescription>
+  </AddIn>
+</RevitAddIns>
