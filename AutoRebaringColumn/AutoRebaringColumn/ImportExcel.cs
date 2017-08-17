@@ -12,7 +12,7 @@ using Autodesk.Revit.DB.Structure;
 using Microsoft.Office.Interop.Excel;
 using Excel = Microsoft.Office.Interop.Excel;
 using System.Runtime.InteropServices.ComTypes;
-using AutoRebaringWall;
+using AutoRebaringColumn;
 using System.IO;
 using System.Xml;
 
@@ -26,7 +26,7 @@ namespace DataExcel
         const double mm2f = 1 / f2mm;
         #endregion
         #region "thông tin chung"
-        public int wallCount { get; set; }
+        public int colCount { get; set; }
         public string mark { get; set; }
         public double dtc1_bien { get; set; }
         public double dtc2_bien { get; set; }
@@ -69,11 +69,9 @@ namespace DataExcel
         public List<string> Level { get; set; }
         public List<double> bt { get; set; }
         public List<double> bd { get; set; }
-        public List<string> D_bien { get; set; }
-        public List<string> D_giua { get; set; }
+        public List<string> D { get; set; }
         public List<int> number_A { get; set; }
         public List<int> number_B { get; set; }
-        public List<int> number_C { get; set; }
         #endregion
         #region "Stirrup Rebar"
         public List<string> SCDaiNgoai { get; set; }
@@ -91,9 +89,9 @@ namespace DataExcel
         public List<string> daiNgang { get; set; }
 
         #endregion
-        public ImportExcel(int wallCount, string excelPath)
+        public ImportExcel(int colCount, string excelPath,Document doc)
         {
-            this.wallCount = wallCount;
+            this.colCount = colCount;
             ExcelFile ex = new ExcelFile(excelPath);
             Workbook wb = ex.Workbook;
             wb.Save();
@@ -140,11 +138,9 @@ namespace DataExcel
             Level = new List<string>();
             bt = new List<double>();
             bd = new List<double>();
-            D_bien = new List<string>();
-            D_giua = new List<string>();
+            D = new List<string>();
             number_A = new List<int>();
             number_B = new List<int>();
-            number_C = new List<int>();
             SCDaiNgoai = new List<string>();
             DKDaiNgoai = new List<string>();
             SCDaiBien = new List<string>();
@@ -159,17 +155,15 @@ namespace DataExcel
             spacing6_bien = new List<double>();
             daiNgang = new List<string>();
             #endregion
-            for (int i = 0; i < wallCount; i++)
+            for (int i = 0; i < colCount; i++)
             {
                 #region "standard rebar"
                 Level.Add((string)sheet.Range["Level"].Offset[i].Value);
                 bt.Add((double)sheet.Range["bt"].Offset[i].Value * mm2f);
                 bd.Add((double)sheet.Range["bd"].Offset[i].Value * mm2f);
-                D_bien.Add((string)sheet.Range["D_bien"].Offset[i].Value);
-                D_giua.Add((string)sheet.Range["D_giua"].Offset[i].Value);
+                D.Add((string)sheet.Range["D"].Offset[i].Value);
                 number_A.Add((int)sheet.Range["number_A"].Offset[i].Value);
                 number_B.Add((int)sheet.Range["number_B"].Offset[i].Value);
-                number_C.Add((int)sheet.Range["number_C"].Offset[i].Value);
                 #endregion
                 #region "stirrup rebar"
                 SCDaiNgoai.Add((string)sheet.Range["SCDaiNgoai"].Offset[i].Value);
@@ -268,16 +262,10 @@ namespace DataExcel
                                     this.bd = ReadMultiAttributeDouble(reader, this.LevelCount);
                                     break;
                                 }
-                            case "D_bien":
+                            case "D":
                                 {
                                     if (this.mark != wallMark) break;
-                                    this.D_bien = ReadMultiAttributeString(reader, this.LevelCount);
-                                    break;
-                                }
-                            case "D_giua":
-                                {
-                                    if (this.mark != wallMark) break;
-                                    this.D_giua = ReadMultiAttributeString(reader, this.LevelCount);
+                                    this.D = ReadMultiAttributeString(reader, this.LevelCount);
                                     break;
                                 }
                             case "number_A":
@@ -290,12 +278,6 @@ namespace DataExcel
                                 {
                                     if (this.mark != wallMark) break;
                                     this.number_B = ReadMultiAttributeInt(reader, this.LevelCount);
-                                    break;
-                                }
-                            case "number_C":
-                                {
-                                    if (this.mark != wallMark) break;
-                                    this.number_C = ReadMultiAttributeInt(reader, this.LevelCount);
                                     break;
                                 }
                             case "SCDaiNgoai":
@@ -422,11 +404,8 @@ namespace DataExcel
         #endregion
         #region "khai báo đặc tính"
         public string mark { get; set; }
-        public List<RebarBarType> type_D_bien { get; set; }
-        public List<double> D_bien { get; set; }
-
-        public List<RebarBarType> type_D_giua { get; set; }
-        public List<double> D_giua { get; set; }
+        public List<RebarBarType> type_D { get; set; }
+        public List<double> D { get; set; }
 
         public List<RebarShape> SCDaiNgoai { get; set; }
         public List<RebarBarType> type_DKDaiNgoai { get; set; }
@@ -463,7 +442,7 @@ namespace DataExcel
         public List<XYZ> mp12 { get; set; }
 
         #endregion
-        public DataProcess(ImportExcel excel, ExternalCommandData commandData, List<Wall> wall)
+        public DataProcess(ImportExcel excel, ExternalCommandData commandData, List<Element> column)
         {
             #region "khai báo List"
             mark = excel.mark;
@@ -473,11 +452,8 @@ namespace DataExcel
             doc = uidoc.Document;
             sel = uidoc.Selection;
             //-----------------------------------------------------------------------------------------------------
-            type_D_bien = new List<RebarBarType>();
-            D_bien = new List<double>();
-
-            type_D_giua = new List<RebarBarType>();
-            D_giua = new List<double>();
+            type_D = new List<RebarBarType>();
+            D = new List<double>();
 
             SCDaiNgoai = new List<RebarShape>();
             type_DKDaiNgoai = new List<RebarBarType>();
@@ -499,7 +475,6 @@ namespace DataExcel
 
             A = new List<double>();
             B = new List<double>();
-            C = new List<double>();
 
             driving = new List<Autodesk.Revit.DB.Line>();
             vecX = new List<XYZ>();
@@ -516,13 +491,10 @@ namespace DataExcel
             FilteredElementCollector colBarType = new FilteredElementCollector(doc).OfClass(typeof(RebarBarType));
             FilteredElementCollector colBarShape = new FilteredElementCollector(doc).OfClass(typeof(RebarShape));
             #endregion
-            for (int i = 0; i < wall.Count; i++)
+            for (int i = 0; i < column.Count; i++)
             {
-                type_D_bien.Add(colBarType.Where(x => x.Name == excel.D_bien[i]).Cast<RebarBarType>().First());
-                D_bien.Add(type_D_bien[i].LookupParameter("Bar Diameter").AsDouble());
-
-                type_D_giua.Add(colBarType.Where(x => x.Name == excel.D_giua[i]).Cast<RebarBarType>().First());
-                D_giua.Add(type_D_giua[i].LookupParameter("Bar Diameter").AsDouble());
+                type_D.Add(colBarType.Where(x => x.Name == excel.D[i]).Cast<RebarBarType>().First());
+                D.Add(type_D[i].LookupParameter("Bar Diameter").AsDouble());
 
                 SCDaiNgoai.Add(colBarShape.Where(x => x.Name == excel.SCDaiNgoai[i]).Cast<RebarShape>().First());
                 type_DKDaiNgoai.Add(colBarType.Where(x => x.Name == excel.DKDaiNgoai[i]).Cast<RebarBarType>().First());
@@ -536,17 +508,18 @@ namespace DataExcel
                 type_DKDaiCon.Add(colBarType.Where(x => x.Name == excel.DKDaiCon[i]).Cast<RebarBarType>().First());
                 DKDaiCon.Add(type_DKDaiCon[i].LookupParameter("Bar Diameter").AsDouble());
 
-                hVach.Add(wall[i].LookupParameter("Unconnected Height").AsDouble());
-                width.Add(wall[i].WallType.LookupParameter("Width").AsDouble());
-                length.Add(wall[i].LookupParameter("Length").AsDouble());
-                cover.Add(rebarCover(wall[i]));
-                a.Add(cover[i] + D_bien[i] / 2 + DKDaiNgoai[i]);
+                hVach.Add(column[i].LookupParameter("Unconnected Height").AsDouble());
+                ElementType eType = doc.GetElement(column[i].GetTypeId()) as ElementType;
+                width.Add(eType.LookupParameter("Width").AsDouble());
+                length.Add(column[i].LookupParameter("Length").AsDouble());
+                cover.Add(rebarCover(column[i]));
+                a.Add(cover[i] + D[i] / 2 + DKDaiNgoai[i]);
 
                 A.Add(length[i] / (double)excel.tl - a[i]);
                 B.Add(length[i] * (1 - 2 / (double)excel.tl));
                 C.Add(width[i] - 2 * a[i]);
 
-                driving.Add(drivingLine(wall[i]));
+                driving.Add(drivingLine(column[i]));
                 vecX.Add(CheckGeometry.GetDirection(driving[i]));
                 vecY.Add(XYZ.BasisZ.CrossProduct(vecX[i]));
 

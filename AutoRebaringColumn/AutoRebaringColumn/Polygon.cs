@@ -10,7 +10,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using System.Text;
 
-namespace AutoRebaringWall
+namespace AutoRebaringColumn
 {
     public class Polygon
     {

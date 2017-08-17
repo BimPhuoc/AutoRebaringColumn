@@ -8,13 +8,13 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
-using AutoRebaringWall;
+using AutoRebaringColumn;
 using DataExcel;using Export;
 
 #endregion
-namespace Phuoc
+namespace StandardRebar
 {
-    public class StandardBarWall
+    public class StandardBarColumn
     {
         UIApplication uiapp;
         UIDocument uidoc;
@@ -33,7 +33,7 @@ namespace Phuoc
             nodraw,
             vuottang
         };
-        public StandardBarWall(ExternalCommandData commandData, ref string message, ElementSet element, string path)
+        public StandardBarColumn(ExternalCommandData commandData, ref string message, ElementSet element, string path)
         {
             uiapp = commandData.Application;
             uidoc = uiapp.ActiveUIDocument;
@@ -42,92 +42,60 @@ namespace Phuoc
             sel = uidoc.Selection;
             activeView = uidoc.ActiveView;
             ////filter walls frome selection , Sort List Wall folllow Vec_Z
-            List<Wall> wall = sortWallByLevel(sel);
+            List<Element> column= sortByLevel(sel);
             #region "INPUT EXCEL"
-            ImportExcel excel = new ImportExcel(wall.Count, path);
-            DataProcess data = new DataProcess(excel, commandData, wall);
+            ImportExcel excel = new ImportExcel(column.Count, path,doc);
+            DataProcess data = new DataProcess(excel, commandData, column);
             #endregion
             #region "PHỐI THÉP"
-            List<floorOnWall> san = new List<floorOnWall>();
-            for (int i = 0; i < wall.Count; i++) san.Add(new floorOnWall(wall[i], doc, sel));
-            CombineRebar combineRebar_bien = new CombineRebar(excel, data.hVach, san, excel.bt, excel.bd, data.D_bien, excel.dtc1_bien, excel.dtc2_bien);
-            CombineRebar combineRebar_giua = new CombineRebar(excel, data.hVach, san, excel.bt, excel.bd, data.D_giua, excel.dtc1_giua, excel.dtc2_giua);
+            List<floorOnColumn> san = new List<floorOnColumn>();
+            for (int i = 0; i < column.Count; i++) san.Add(new floorOnColumn(column[i], doc, sel));
+            CombineRebar combineRebar = new CombineRebar(excel, data.hVach, san, excel.bt, excel.bd, data.D, excel.dtc1_bien, excel.dtc2_bien);
             #endregion
             #region "export PHỐI THÉP"
             //xuất kết quả sau khi phối thép
-            List<double> L1_bien = combineRebar_bien.L1;
-            List<double> L2_bien = combineRebar_bien.L2;
-            List<double> L0_bien = combineRebar_bien.L0;
-            List<string> Comment_bien = combineRebar_bien.comment;
-            List<bool> vt1_bien = combineRebar_bien.vuotTang1;
-            List<bool> vt2_bien = combineRebar_bien.vuotTang2;
-
-            List<double> L1_giua = combineRebar_giua.L1;
-            List<double> L2_giua = combineRebar_giua.L2;
-            List<double> L0_giua = combineRebar_giua.L0;
-            List<string> Comment_giua = combineRebar_giua.comment;
-            List<bool> vt1_giua = combineRebar_giua.vuotTang1;
-            List<bool> vt2_giua = combineRebar_giua.vuotTang2;
+            List<double> L1 = combineRebar.L1;
+            List<double> L2 = combineRebar.L2;
+            List<double> L0 = combineRebar.L0;
+            List<string> Comment = combineRebar.comment;
+            List<bool> vt1 = combineRebar.vuotTang1;
+            List<bool> vt2 = combineRebar.vuotTang2;
             #endregion
             #region "điểm offset các điểm bắt vẽ thép"
-            double[] z1_bien = z_offset(L1_bien, vt1_bien, data.D_bien, data.hVach, excel.dtc1_bien, excel.n1_);
-            double[] z2_bien = z_offset(L2_bien, vt2_bien, data.D_bien, data.hVach, excel.dtc2_bien, excel.n1_);
-            double[] z1_giua = z_offset(L1_giua, vt1_giua, data.D_giua, data.hVach, excel.dtc1_giua, excel.n1_);
-            double[] z2_giua = z_offset(L2_giua, vt2_giua, data.D_giua, data.hVach, excel.dtc2_giua, excel.n1_);
+            double[] z1 = z_offset(L1, vt1, data.D, data.hVach, excel.dtc1_bien, excel.n1_);
+            double[] z2 = z_offset(L2, vt2, data.D, data.hVach, excel.dtc2_bien, excel.n1_);
             #endregion
             #region"VẼ THÉP"
-            for (int i = 0; i < wall.Count; i++)
+            for (int i = 0; i < column.Count; i++)
             {
                 #region "input"
                 List<XYZ> bp0 = data.bp0; List<XYZ> mp01 = data.mp01; List<XYZ> mp12 = data.mp12;
                 List<XYZ> mp02 = data.mp02; List<XYZ> bp1 = data.bp1; List<XYZ> mp11 = data.mp11;
                 List<XYZ> vecX = data.vecX; List<XYZ> vecY = data.vecY;
-                List<int> number_A = excel.number_A; List<int> number_B = excel.number_B; List<int> number_C = excel.number_C;
+                List<int> number_A = excel.number_A; List<int> number_B = excel.number_B;
                 List<double> A = data.A; List<double> B = data.B; List<double> C = data.C;
-                List<double> D_bien = data.D_bien; List<double> D_giua = data.D_giua;
-                List<RebarBarType> type_D_bien = data.type_D_bien; List<RebarBarType> type_D_giua = data.type_D_giua;
+                List<double> D = data.D;
+                List<RebarBarType> type_D_bien = data.type_D;
                 #endregion
                 #region "vẽ đặc biệt"
                 #region "Rebar Point of Wall1"
                 //vách[i]
-                RebarPoint w1_c1 = new RebarPoint(true, bp0[i], vecX[i], number_A[i], A[i], D_bien[i], type_D_bien[i], L1_bien[i], L2_bien[i], z1_bien[i], z2_bien[i], false);
-                RebarPoint w1_c4 = new RebarPoint(false, mp01[i], -vecY[i], number_C[i], C[i], D_bien[i], type_D_bien[i], L1_bien[i], L2_bien[i], z1_bien[i], z2_bien[i], w1_c1.sole_cuoi);
-                RebarPoint w1_c5 = new RebarPoint(true, mp12[i], -vecX[i], number_A[i], A[i], D_bien[i], type_D_bien[i], L1_bien[i], L2_bien[i], z1_bien[i], z2_bien[i], w1_c4.sole_cuoi);
-                RebarPoint w1_c2 = new RebarPoint(false, bp0[i], -vecY[i], number_C[i], C[i], D_bien[i], type_D_bien[i], L1_bien[i], L2_bien[i], z1_bien[i], z2_bien[i], w1_c5.sole_cuoi);
-                RebarPoint w1_c3 = new RebarPoint(false, mp01[i], vecX[i], number_B[i], B[i], D_giua[i], type_D_giua[i], L1_giua[i], L2_giua[i], z1_giua[i], z2_giua[i], w1_c1.sole_cuoi);
+                RebarPoint w1_c1 = new RebarPoint(true, bp0[i], vecX[i], number_A[i], A[i], D[i], type_D_bien[i], L1[i], L2[i], z1[i], z2[i], false);
 
-                RebarPoint w1_c10 = new RebarPoint(true, mp02[i], vecX[i], number_A[i], A[i], D_bien[i], type_D_bien[i], L1_bien[i], L2_bien[i], z1_bien[i], z2_bien[i], w1_c3.sole_cuoi);
-                RebarPoint w1_c7 = new RebarPoint(false, bp1[i], vecY[i], number_C[i], C[i], D_bien[i], type_D_bien[i], L1_bien[i], L2_bien[i], z1_bien[i], z2_bien[i], w1_c10.sole_cuoi);
-                RebarPoint w1_c6 = new RebarPoint(true, bp1[i], -vecX[i], number_A[i], A[i], D_bien[i], type_D_bien[i], L1_bien[i], L2_bien[i], z1_bien[i], z2_bien[i], w1_c7.sole_cuoi);
-                RebarPoint w1_c9 = new RebarPoint(false, mp11[i], vecY[i], number_C[i], C[i], D_bien[i], type_D_bien[i], L1_bien[i], L2_bien[i], z1_bien[i], z2_bien[i], w1_c6.sole_cuoi);
-                RebarPoint w1_c8 = new RebarPoint(false, mp11[i], -vecX[i], number_B[i], B[i], D_giua[i], type_D_giua[i], L1_giua[i], L2_giua[i], z1_giua[i], z2_giua[i], w1_c6.sole_cuoi);
 
-                RebarPoint w1_l1 = w1_c1.Add(w1_c3).Add(w1_c10);
-                RebarPoint w1_l2 = w1_c6.Add(w1_c8).Add(w1_c5);
+
+
 
                 #endregion
                 //vách[i+1]
                 int j2 = i + 1;
-                if (i <wall.Count-1)
+                if (i <column.Count-1)
                 {
                     #region "Rebar Point"
-                    RebarPoint w2_c1 = new RebarPoint(true, bp0[j2], vecX[j2], number_A[j2], A[j2], D_bien[j2], type_D_bien[j2], L1_bien[j2], L2_bien[j2], z1_bien[j2], z2_bien[j2], false);
-                    RebarPoint w2_c4 = new RebarPoint(false, mp01[j2], -vecY[j2], number_C[j2], C[j2], D_bien[j2], type_D_bien[j2], L1_bien[j2], L2_bien[j2], z1_bien[j2], z2_bien[j2], w2_c1.sole_cuoi);
-                    RebarPoint w2_c5 = new RebarPoint(true, mp12[j2], -vecX[j2], number_A[j2], A[j2], D_bien[j2], type_D_bien[j2], L1_bien[j2], L2_bien[j2], z1_bien[j2], z2_bien[j2], w2_c4.sole_cuoi);
-                    RebarPoint w2_c2 = new RebarPoint(false, bp0[j2], -vecY[j2], number_C[j2], C[j2], D_bien[j2], type_D_bien[j2], L1_bien[j2], L2_bien[j2], z1_bien[j2], z2_bien[j2], w2_c5.sole_cuoi);
-                    RebarPoint w2_c3 = new RebarPoint(false, mp01[j2], vecX[j2], number_B[j2], B[j2], D_giua[j2], type_D_giua[j2], L1_giua[j2], L2_giua[j2], z1_giua[j2], z2_giua[j2], w2_c1.sole_cuoi);
-
-                    RebarPoint w2_c10 = new RebarPoint(true, mp02[j2], vecX[j2], number_A[j2], A[j2], D_bien[j2], type_D_bien[j2], L1_bien[j2], L2_bien[j2], z1_bien[j2], z2_bien[j2], w2_c3.sole_cuoi);
-                    RebarPoint w2_c7 = new RebarPoint(false, bp1[j2], vecY[j2], number_C[j2], C[j2], D_bien[j2], type_D_bien[j2], L1_bien[j2], L2_bien[j2], z1_bien[j2], z2_bien[j2], w2_c10.sole_cuoi);
-                    RebarPoint w2_c6 = new RebarPoint(true, bp1[j2], -vecX[j2], number_A[j2], A[j2], D_bien[j2], type_D_bien[j2], L1_bien[j2], L2_bien[j2], z1_bien[j2], z2_bien[j2], w2_c7.sole_cuoi);
-                    RebarPoint w2_c9 = new RebarPoint(false, mp11[j2], vecY[j2], number_C[j2], C[j2], D_bien[j2], type_D_bien[j2], L1_bien[j2], L2_bien[j2], z1_bien[j2], z2_bien[j2], w2_c6.sole_cuoi);
-                    RebarPoint w2_c8 = new RebarPoint(false, mp11[j2], -vecX[j2], number_B[j2], B[j2], D_giua[j2], type_D_giua[j2], L1_giua[j2], L2_giua[j2], z1_giua[j2], z2_giua[j2], w2_c6.sole_cuoi);
-
-                    RebarPoint w2_l1 = w2_c1.Add(w2_c3).Add(w2_c10);
-                    RebarPoint w2_l2 = w2_c6.Add(w2_c8).Add(w2_c5);
+                    RebarPoint w2_c1 = new RebarPoint(true, bp0[j2], vecX[j2], number_A[j2], A[j2], D[j2], type_D_bien[j2], L1[j2], L2[j2], z1[j2], z2[j2], false);
                     #endregion
                     #region "Xác định cách vẽ ứng với Rebar Point"
-                    DentifyRebar(w1_l1, w2_l1, wall[i + 1], data.a[i+1], excel);
+                    DentifyRebar(w1_c1, w2_c1, column[i + 1], data.a[i+1], excel);
                     //DentifyRebar(wall1_l2, wall2_l2, wall[i + 1], data.a[i], excel);
                     //DentifyRebar(wall1_c2, wall2_c2, wall[i + 1], data.a[i], excel);
                     //DentifyRebar(wall1_c4, wall2_c4, wall[i + 1], data.a[i], excel);
@@ -138,19 +106,14 @@ namespace Phuoc
                 else
                 {
                     #region "Dentify Rebar"
-                    DentifyRebar(w1_l1, draw.hook);
-                    DentifyRebar(w1_l2, draw.hook);
-                    DentifyRebar(w1_c2, draw.hook);
-                    DentifyRebar(w1_c4, draw.hook);
-                    DentifyRebar(w1_c9, draw.hook);
-                    DentifyRebar(w1_c7, draw.hook);
+                    DentifyRebar(w1_c1, draw.hook);
                     #endregion
                 }
-                createBar(w1_l1, excel, wall[i], san[i]);
+                createBar(w1_c1, excel, column[i], san[i]);
             #endregion
             }
             #endregion
-            ExportExcel export = new ExportExcel(path, L0_bien, L1_bien, L2_bien, Comment_bien,L0_giua,L1_giua,L2_giua,Comment_giua);
+            ExportExcel export = new ExportExcel(path, L0, L1, L2, Comment);
         }
         public double[] z_offset(List<double> L, List<bool> vuotTang, List<double> D, List<double> hVach, double dtc,int n1_)
         {
@@ -177,9 +140,10 @@ namespace Phuoc
             }
             return z_offset;
         }
-        public PointComparePolygonResult CheckPointInWall(XYZ point, Wall wall,double a,double bop)
+        public PointComparePolygonResult CheckPointInColumn(XYZ point, Element column,double a,double bop)
         {
-            Polygon pl = (new WallGeometryInfo(wall)).BottomPolygon;
+            FamilyInstance fam = column as FamilyInstance;
+            Polygon pl = (new ColumnGeometryInfo(fam)).BottomPolygon;
             Polygon pl1 = CheckGeometry.OffsetPolygon(pl, a, true);
             Polygon pl2 = CheckGeometry.OffsetPolygon(pl1,bop, false);
             return pl2.CheckXYZPointPosition(CheckGeometry.GetProjectPoint(pl2.Plane, point));
@@ -189,13 +153,13 @@ namespace Phuoc
         /// </summary>
         /// <param name="rbPoint1">rebar Point tầng 1</param>
         /// <param name="rbPoint2">rebar Point tầng 2</param>
-        /// <param name="wall2"> wall tầng 2</param>
+        /// <param name="column2"> wall tầng 2</param>
         /// <param name="a"> khoãng cách tâm thép đến mép</param>
         /// <param name="excel">import excel để lấy n1=40D và đoạn bóp bẻ ke cho phép </param>
-        public void DentifyRebar(RebarPoint rbPoint1, RebarPoint rbPoint2, Wall wall2,double a,ImportExcel excel)
+        public void DentifyRebar(RebarPoint rbPoint1, RebarPoint rbPoint2, Element column2,double a,ImportExcel excel)
         {
             int n1 = 0; int n2 = 0;//list thép ở tầng i và tầng i+1
-            double hvach2 = wall2.LookupParameter("Unconnected Height").AsDouble();
+            double hvach2 = column2.LookupParameter("Unconnected Height").AsDouble();
             while (n1 < rbPoint1.point.Count || n2 < rbPoint2.point.Count)
             {
                 #region "các cây thép wall_i+1 bị thừa, phải cắm mới"
@@ -205,7 +169,7 @@ namespace Phuoc
                     {
                         XYZ startPoint = GeomUtil.OffsetPoint(rbPoint2.point[m], -XYZ.BasisZ, rbPoint2.z_offset[m]);
                         XYZ endPoint = GeomUtil.OffsetPoint(rbPoint2.point[m], XYZ.BasisZ, excel.n1_ * rbPoint2.D[m]);
-                        rbPoint1.addNSPoint(endPoint, startPoint, rbPoint2.type_D[m], wall2);
+                        rbPoint1.addNSPoint(endPoint, startPoint, rbPoint2.type_D[m], column2);
                     }
                     break;
                 }
@@ -219,7 +183,7 @@ namespace Phuoc
                 }
                 #endregion
                 #region "xét thanh thép wall1, có nằm trong tiết diện của wall2 ko?"
-                if (CheckPointInWall(rbPoint1.point[n1], wall2, a, excel.bop) == PointComparePolygonResult.Outside)
+                if (CheckPointInColumn(rbPoint1.point[n1], column2, a, excel.bop) == PointComparePolygonResult.Outside)
                 {
                     rbPoint1.draw[n1] = draw.hook; n1++; continue;
                 }
@@ -238,7 +202,8 @@ namespace Phuoc
                     if (rbPoint2.L[n2] == 0)//TH tầng 1 vượt tầng+TH tầng 2 ko có thép = đúng
                     {
                         #region "vẽ theo kiểu vượt tầng, xác định các điểm để vẽ"
-                        Polygon bottomWall2 = (new WallGeometryInfo(wall2)).BottomPolygon;
+                        FamilyInstance fam = column2 as FamilyInstance;
+                        Polygon bottomWall2 = (new ColumnGeometryInfo(fam)).BottomPolygon;
                         XYZ zzStartPoint =  CheckGeometry.GetProjectPoint(bottomWall2.Plane, rbPoint2.point[n2]);
                         double l1 = zzStartPoint.Z - rbPoint1.point[n1].Z;
                         XYZ zzEndPoint = GeomUtil.OffsetPoint(zzStartPoint, XYZ.BasisZ,rbPoint1.L[n1]-l1);
@@ -272,7 +237,7 @@ namespace Phuoc
                         XYZ startPoint = GeomUtil.OffsetPoint(rbPoint2.point[n2], -XYZ.BasisZ, rbPoint2.z_offset[n2]);
                         XYZ endPoint = GeomUtil.OffsetPoint(rbPoint2.point[n2], XYZ.BasisZ, excel.n1_ * rbPoint2.D[n2]);
                         //đánh dấu lại vào list cắm mới
-                        rbPoint1.addNSPoint(endPoint, startPoint, rbPoint2.type_D[n2], wall2);
+                        rbPoint1.addNSPoint(endPoint, startPoint, rbPoint2.type_D[n2], column2);
                         n2++; continue;
                         #endregion
                     }
@@ -373,7 +338,7 @@ namespace Phuoc
                         this.L.Add(L2);
                     }
                     //nếu L=0 ko vẽ
-                    draw.Add(StandardBarWall.draw.straight);
+                    draw.Add(StandardBarColumn.draw.straight);
                     this.D.Add(D);
                     this.type_D.Add(type_D);
                     this.normal.Add(normal);
@@ -398,7 +363,7 @@ namespace Phuoc
                 this.sole_cuoi = rebarPoint.sole_cuoi;
                 return this;
             }
-            public void addNSPoint(XYZ endPoint, XYZ startPoint, RebarBarType rebarType,Wall host)
+            public void addNSPoint(XYZ endPoint, XYZ startPoint, RebarBarType rebarType,Element host)
             {
                 nsPoint.Add(new NSPoint(endPoint, startPoint, rebarType, host));
             }
@@ -407,8 +372,8 @@ namespace Phuoc
                 public XYZ endPoint { get; set; }
                 public XYZ startPoint { get; set; }
                 public RebarBarType rebarType { get; set; }
-                public Wall host { get; set; }
-                public NSPoint(XYZ endPoint, XYZ startPoint, RebarBarType rebarType,Wall host)
+                public Element host { get; set; }
+                public NSPoint(XYZ endPoint, XYZ startPoint, RebarBarType rebarType,Element host)
                 {
                     this.endPoint = endPoint;
                     this.startPoint = startPoint;
@@ -424,18 +389,18 @@ namespace Phuoc
             {
                 if(Vecto_XY(point[index],zzStartPoint).GetLength()< D[index])
                 {
-                    draw[index] = StandardBarWall.draw.straight;
+                    draw[index] = StandardBarColumn.draw.straight;
                     this.zzEndPoint[index] = zzEndPoint;
                 }
                 else
                 {
-                    draw[index] = StandardBarWall.draw.zigzag;
+                    draw[index] = StandardBarColumn.draw.zigzag;
                     this.zzStartPoint[index] = zzStartPoint;
                     this.zzEndPoint[index] = zzEndPoint;
                 }
             }
         }
-        public List<Rebar> createBar(RebarPoint rbPoint,ImportExcel excel,Wall wall,floorOnWall floor)
+        public List<Rebar> createBar(RebarPoint rbPoint,ImportExcel excel,Element host,floorOnColumn floor)
         {
             List<Rebar> listBar = new List<Rebar>();
             for (int i = 0; i < rbPoint.point.Count; i++)
@@ -494,8 +459,8 @@ namespace Phuoc
                 }
                 #region "Vẽ thép và gán partition"
                 Rebar rebar = Rebar.CreateFromCurves(doc, RebarStyle.Standard, rbPoint.type_D[i], null, null,
-            wall, normal, curves, RebarHookOrientation.Left, RebarHookOrientation.Left, true, true);
-                AssignPartition(rebar, wall);
+            host, normal, curves, RebarHookOrientation.Left, RebarHookOrientation.Left, true, true);
+                AssignPartition(rebar, host);
                 listBar.Add(rebar);
                 #endregion
             }
@@ -518,21 +483,21 @@ namespace Phuoc
                 #region "Vẽ thép cắm mới và gán partition"
                 Rebar rebar = Rebar.CreateFromCurves(doc, RebarStyle.Standard, rbPoint.nsPoint[i].rebarType, null, null,
              rbPoint.nsPoint[i].host, rbPoint.normal[i], curves, RebarHookOrientation.Left, RebarHookOrientation.Left, true, true);
-                AssignPartition(rebar, wall);
+                AssignPartition(rebar, host);
                 listBar.Add(rebar);
                 #endregion
             }
             #endregion
             return listBar;
         }
-        public void AssignPartition(Rebar rebar,Wall wall)
+        public void AssignPartition(Rebar rebar,Element host)
         {
             string partition = "";
-            partition += wall.LookupParameter("Base Constraint").AsValueString();
-            partition += "_" + wall.LookupParameter("Mark").AsString();
+            partition += host.LookupParameter("Base Constraint").AsValueString();
+            partition += "_" + host.LookupParameter("Mark").AsString();
             rebar.LookupParameter("Partition").Set(partition);
         }
-        public class CombineWall
+        public class CombineColumn
         {
             #region "check has zigzag between 2 walls
             public draw draw_w1 { get; set; }
@@ -547,11 +512,11 @@ namespace Phuoc
             public double offset_l2 { get; set; }
             #endregion
             #region "kích thước"
-            public Wall wall1 { get; set; }
+            public Element column1 { get; set; }
             public double width1 { get; set; }
             public double length1 { get; set; }
             public double height1 { get; set; }
-            public Wall wall2 { get; set; }
+            public Element column2 { get; set; }
             public Line driving2 { get; set; }
             public double width2 { get; set; }
             public double length2 { get; set; }
@@ -568,30 +533,32 @@ namespace Phuoc
             public XYZ vecY2 { get; set; }
 
             #endregion
-            public CombineWall(Wall wall1, Wall wall2, ImportExcel data)
+            public CombineColumn(Element column1, Element column2, ImportExcel data,Document doc)
             {
-                this.wall1 = wall1;
-                this.wall2 = wall2;
+                this.column1 = column1;
+                this.column2 = column2;
                 #region "Mặc định là vẽ thẳng"
                 draw_w1 = draw.straight; draw_w2 = draw.straight;
                 draw_l1 = draw.straight; draw_l2 = draw.straight;
                 double ss = 1 * mm2f;
                 #endregion
                 #region "driving curve, length, width,height, vecto, sp, ep
-                driving1 = DrivingLine(wall1);
-                width1 = wall1.WallType.LookupParameter("Width").AsDouble();
-                length1 = wall1.LookupParameter("Length").AsDouble();
-                height1 = wall1.LookupParameter("Unconnected Height").AsDouble();
+                driving1 = DrivingLine(column1);
+                ElementType eType1 = doc.GetElement(column1.GetTypeId()) as ElementType;
+                width1 = eType1.LookupParameter("Width").AsDouble();
+                length1 = column1.LookupParameter("Length").AsDouble();
+                height1 = column1.LookupParameter("Unconnected Height").AsDouble();
                 vecX1 = CheckGeometry.GetDirection(driving1);
                 vecY1 = XYZ.BasisZ.CrossProduct(vecX1);
                 sp1 = GeomUtil.OffsetPoint(driving1.GetEndPoint(0) as XYZ, vecY1, width1 / 2);
                 ep1 = GeomUtil.OffsetPoint(driving1.GetEndPoint(1) as XYZ, -vecY1, width1 / 2);
 
 
-                driving2 = DrivingLine(wall2);
-                width2 = wall2.WallType.LookupParameter("Width").AsDouble();
-                length2 = wall2.LookupParameter("Length").AsDouble();
-                height2 = wall2.LookupParameter("Unconnected Height").AsDouble();
+                driving2 = DrivingLine(column2);
+                ElementType eType2 = doc.GetElement(column2.GetTypeId()) as ElementType;
+                width2 = eType1.LookupParameter("Width").AsDouble();
+                length2 = column2.LookupParameter("Length").AsDouble();
+                height2 = column2.LookupParameter("Unconnected Height").AsDouble();
                 vecX2 = CheckGeometry.GetDirection(driving2);
                 vecY2 = XYZ.BasisZ.CrossProduct(vecX2);
                 XYZ sp2 = GeomUtil.OffsetPoint(driving2.GetEndPoint(0), vecY2, width2 / 2);
@@ -650,18 +617,19 @@ namespace Phuoc
                 }
                 #endregion
             }
-            public CombineWall(Wall wall1)
+            public CombineColumn(Element column1,Document doc)
             {
-                this.wall1 = wall1;
+                this.column1 = column1;
                 #region "tầng cuối cùng nên vẽ hook"
                 draw_w1 = draw.hook; draw_w2 = draw.hook;
                 draw_l1 = draw.hook; draw_l2 = draw.hook;
                 #endregion
                 #region "length, width, Vecto,sp,ep
-                driving1 = DrivingLine(wall1);
-                width1 = wall1.WallType.LookupParameter("Width").AsDouble();
-                length1 = wall1.LookupParameter("Length").AsDouble();
-                height1 = wall1.LookupParameter("Unconnected Height").AsDouble();
+                driving1 = DrivingLine(column1);
+                ElementType eType = doc.GetElement(column1.GetTypeId()) as ElementType;
+                width1 = eType.LookupParameter("Width").AsDouble();
+                length1 = column1.LookupParameter("Length").AsDouble();
+                height1 = column1.LookupParameter("Unconnected Height").AsDouble();
                 vecX1 = CheckGeometry.GetDirection(driving1);
                 vecY1 = XYZ.BasisZ.CrossProduct(vecX1);
                 sp1 = GeomUtil.OffsetPoint(driving1.GetEndPoint(0), vecY1, width1 / 2);
@@ -689,14 +657,14 @@ namespace Phuoc
         /// <summary> 
         /// xác định các sàn nằm phía trên và chạm vào đỉnh cột
         /// </summary>
-        public class floorOnWall
+        public class floorOnColumn
         {
             public double thickness { get; set; }
             public double offset { get; set; }
             public double z { get; set; }
-            public floorOnWall(Wall wall,Document doc,Selection sel)
+            public floorOnColumn(Element column,Document doc,Selection sel)
             {
-                CombineWall combine = new CombineWall(wall);
+                CombineColumn combine = new CombineColumn(column,doc);
                 XYZ point0 = GeomUtil.OffsetPoint(combine.sp1,( combine.vecX1-combine.vecY1), 50*mm2f);
                 XYZ point1 = GeomUtil.OffsetPoint(combine.ep1,(-combine.vecX1 + combine.vecY1), 50*mm2f);
                 //chiếu lên trên
@@ -705,7 +673,7 @@ namespace Phuoc
                 point1 = GeomUtil.OffsetPoint(point1, XYZ.BasisZ, combine.height1+ heightOffset);
                 Outline ol = createOutline(point0, point1);
                 BoundingBoxIntersectsFilter filter1 = new BoundingBoxIntersectsFilter(ol);
-                ElementIntersectsElementFilter filter2 = new ElementIntersectsElementFilter(wall);
+                ElementIntersectsElementFilter filter2 = new ElementIntersectsElementFilter(column);
                 LogicalAndFilter filter = new LogicalAndFilter(filter1, filter2);
                 List<Element> listSan = new FilteredElementCollector(doc).WherePasses(filter).OfClass(typeof(Floor)).ToList();
                 Element san;
@@ -760,44 +728,44 @@ namespace Phuoc
             return Line.CreateBound(ps[0], ps[1]);
         }
         /// <summary>lọc ra wall, sắp xếp theo level </summary>
-        /// <param name="WallSelected"> list đối tượng được chọn</param>
+        /// <param name="colSelected"> list đối tượng được chọn</param>
         /// <returns></returns>
-        public List<Wall> sortWallByLevel(Selection WallSelected)
+        public List<Element> sortByLevel(Selection colSelected)
         {
-            IList<ElementId> wallListId = WallSelected.GetElementIds() as IList<ElementId>;
-            List<Tuple<Wall, double>> eId_z = new List<Tuple<Wall, double>>();
-            foreach (ElementId eId in wallListId)
+            IList<ElementId> listId = colSelected.GetElementIds() as IList<ElementId>;
+            List<Tuple<Element, double>> eId_z = new List<Tuple<Element, double>>();
+            foreach (ElementId eId in listId)
             {
-                Element e = doc.GetElement(eId);Wall wall = e as Wall;
-                if (wall!=null)
+                Element e = doc.GetElement(eId);
+                if (e!=null)
                 {
-                    double z = (wall.Location as LocationCurve).Curve.GetEndPoint(0).Z;
-                    eId_z.Add(new Tuple<Wall, double>(wall, z));
+                    double z = (e.Location as LocationCurve).Curve.GetEndPoint(0).Z;
+                    eId_z.Add(new Tuple<Element, double>(e, z));
                 }
             }
             eId_z = eId_z.OrderBy(j => j.Item2).ToList();
-            List<Wall> wallList = new List<Wall>();
+            List<Element> columnList = new List<Element>();
             for (int i = 0; i < eId_z.Count; i++)
             {
-                wallList.Add(eId_z[i].Item1);
+                columnList.Add(eId_z[i].Item1);
             }
-            return wallList;
+            return columnList;
         }
-        public List<Wall> sortWallByLevel(List<Wall> WallSelected)
+        public List<Element> sortByLevel(List<Element> colSelected)
         {
-            List<Tuple<Wall, double>> eId_z = new List<Tuple<Wall, double>>();
-            foreach (Wall wall in WallSelected)
+            List<Tuple<Element, double>> eId_z = new List<Tuple<Element, double>>();
+            foreach (Element column in colSelected)
             {
-                    double z = (wall.Location as LocationCurve).Curve.GetEndPoint(0).Z;
-                    eId_z.Add(new Tuple<Wall, double>(wall, z));
+                    double z = (column.Location as LocationCurve).Curve.GetEndPoint(0).Z;
+                    eId_z.Add(new Tuple<Element, double>(column, z));
             }
             eId_z = eId_z.OrderBy(j => j.Item2).ToList();
-            List<Wall> wallList = new List<Wall>();
+            List<Element> columnList = new List<Element>();
             for (int i = 0; i < eId_z.Count; i++)
             {
-                wallList.Add(eId_z[i].Item1);
+                columnList.Add(eId_z[i].Item1);
             }
-            return wallList;
+            return columnList;
         }
         public class CombineRebar
         {
@@ -807,24 +775,6 @@ namespace Phuoc
             public List<string> comment { get; set; }
             public List<bool> vuotTang1 { get; set; }
             public List<bool> vuotTang2 { get; set; }
-            public vong Optimize(vong optimize, vong vong)
-            {
-                double sumL0_vong = 0; double sumL0_optimize = 0;
-                if(optimize == null) return vong;
-                for (int i = 0; i < vong.L0.Count; i++) 
-                {
-                    sumL0_optimize += optimize.L0[i];
-                    sumL0_vong += vong.L0[i];
-                }
-                if (sumL0_optimize  > sumL0_vong)
-                {
-                    return vong;
-                }
-                else
-                {
-                    return optimize;
-                }
-            }
             /// <summary> Phối thép cột vách</summary>
             /// <param name="excel"> import excel </param>
             /// <param name="k">số tầng được phối</param>
@@ -838,7 +788,7 @@ namespace Phuoc
             /// <param name="hook"> đoạn neo vách vào sàn qui định trong data thường là 300</param>
             /// <param name="dtc1"> đoạn thép chờ 1</param>
             /// <param name="dtc2"> đoạn thép chờ 2</param>
-            public CombineRebar(ImportExcel excel, List<double> hCot, List<floorOnWall> san, List<double> bt, List<double> bd,
+            public CombineRebar(ImportExcel excel, List<double> hCot, List<floorOnColumn> san, List<double> bt, List<double> bd,
                 List<double> D, double dtc1, double dtc2)
             {
                 #region "khai báo"

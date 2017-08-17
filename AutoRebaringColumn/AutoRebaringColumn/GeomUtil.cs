@@ -11,7 +11,7 @@ using Autodesk.Revit.UI.Selection;
 using Autodesk.Revit.DB.Structure;
 #endregion
 
-namespace AutoRebaringWall
+namespace AutoRebaringColumn
 {
     class GeomUtil
     {

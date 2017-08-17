@@ -61,6 +61,7 @@
       <HintPath>C:\Program Files\Autodesk\Revit 2017\RevitAPIUI.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App.cs" />
@@ -72,7 +73,7 @@
     <Compile Include="GeomUtil.cs" />
     <Compile Include="ImportExcel.cs" />
     <Compile Include="MultiPolygon.cs" />
-    <Compile Include="Phuoc.cs" />
+    <Compile Include="StandardRebar.cs" />
     <Compile Include="Polygon.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

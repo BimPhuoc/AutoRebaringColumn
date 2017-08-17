@@ -11,7 +11,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 #endregion
 
-namespace AutoRebaringWall
+namespace AutoRebaringColumn
 {
     public class MultiPolygon
     {

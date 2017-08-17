@@ -8,7 +8,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 
-namespace AutoRebaringWall
+namespace AutoRebaringColumn
 {
     public class BeamGeometryInfo
     {

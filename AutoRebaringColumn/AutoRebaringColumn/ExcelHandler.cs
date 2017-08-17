@@ -10,7 +10,7 @@ using Excel = Microsoft.Office.Interop.Excel;
 using Microsoft.Office.Interop.Excel;
 using System.Runtime.InteropServices.ComTypes;
 
-namespace AutoRebaringWall
+namespace AutoRebaringColumn
 {
     public class ExcelFile
     {

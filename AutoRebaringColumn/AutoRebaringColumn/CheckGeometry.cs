@@ -12,7 +12,7 @@ using Autodesk.Revit.UI.Selection;
 using System.Text;
 #endregion
 
-namespace AutoRebaringWall
+namespace AutoRebaringColumn
 {
     public static class CheckGeometry
     {
